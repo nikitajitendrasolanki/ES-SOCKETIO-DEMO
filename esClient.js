@@ -1,4 +1,4 @@
-// esClient.js
+
 import { Client } from "@elastic/elasticsearch";
 
 export const esClient = new Client({

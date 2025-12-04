@@ -20,7 +20,7 @@
 
   <h3>Search Product</h3>
   <input id="search" placeholder="Search text">
-  
+
   <button onclick="searchProduct()">Search</button>
 
   <h3>Messages / Products:</h3>
@@ -41,7 +41,7 @@
   const category = document.getElementById("category").value.trim();
   const brand = document.getElementById("brand").value.trim();
 
-  // Validate all fields
+
   if (!name || !price || !category || !brand) {
     return alert("All fields are required and price must be greater than 0");
   }
@@ -81,10 +81,9 @@ async function searchProduct() {
       return alert("Error: " + err.error);
     }
 
-    const products = await res.json(); // array of clean objects
-
+    const products = await res.json(); 
     const ul = document.getElementById("messages");
-    ul.innerHTML = ""; // clear previous results
+    ul.innerHTML = ""; 
 
     products.forEach(product => {
       const li = document.createElement("li");

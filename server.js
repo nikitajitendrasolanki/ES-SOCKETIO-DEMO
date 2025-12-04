@@ -11,7 +11,6 @@ app.use(express.json());
 // Root
 app.get("/", (req, res) => res.send("ElasticSearch + Socket.IO demo server running!"));
 
-// Socket.IO setup
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] }
@@ -27,27 +26,26 @@ io.on("connection", (socket) => {
   });
 });
 
-// ADD PRODUCT (FULL DATA SAVED)
+
 app.post("/add-product", async (req, res) => {
   try {
     const { name, price, category, brand } = req.body;
     if (!name || !price) return res.status(400).json({ error: "Name and price required" });
 
-    // Check if index exists
+
     const indexExists = await esClient.indices.exists({ index: "products" });
     if (!indexExists.body) {
       await esClient.indices.create({ index: "products" }, { ignore: [400] });
       console.log("Index created: products");
     }
 
-    // Index the full product
     const result = await esClient.index({
       index: "products",
       document: { name, price, category, brand },
       refresh: true
     });
 
-    // Emit to clients
+
     io.to("products").emit("receive-message", {
       from: "SERVER",
       message: `New product added: ${name} - ₹${price} - ${category} - ${brand}`
