@@ -7,10 +7,6 @@
 <body>
   <h1>Socket.IO + Elasticsearch Demo Client</h1>
 
-  <h3>Join Room</h3>
-  <input id="room" placeholder="Room name (ex: products)">
-  <button onclick="joinRoom()">Join</button>
-
   <h3>Add Product</h3>
   <input id="pname" placeholder="Product name">
   <input id="price" placeholder="Price">
@@ -20,7 +16,6 @@
 
   <h3>Search Product</h3>
   <input id="search" placeholder="Search text">
-
   <button onclick="searchProduct()">Search</button>
 
   <h3>Messages / Products:</h3>
@@ -29,77 +24,57 @@
   <script>
     const socket = io("http://localhost:3000");
 
-    function joinRoom() {
-      const room = document.getElementById("room").value.trim();
-      if (!room) return alert("Enter a room name");
-      socket.emit("join-room", room);
-    }
-
- async function addProduct() {
+async function addProduct() {
   const name = document.getElementById("pname").value.trim();
   const price = Number(document.getElementById("price").value);
   const category = document.getElementById("category").value.trim();
   const brand = document.getElementById("brand").value.trim();
 
-
   if (!name || !price || !category || !brand) {
-    return alert("All fields are required and price must be greater than 0");
+    return alert("All fields required");
   }
 
+  const res = await fetch("http://localhost:3000/add-product", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, price, category, brand })
+  });
+
+  // FIRST: try reading JSON safely
+  let data = {};
   try {
-    const res = await fetch("http://localhost:3000/add-product", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, price, category, brand })
-    });
+    data = await res.json();
+  } catch (e) {}
 
-    const data = await res.json();
-    console.log("Server Response:", data);
-
-    if (res.ok) {
-      const li = document.createElement("li");
-      li.textContent = `Product added: ${name} - ₹${price} - ${category} - ${brand}`;
-      document.getElementById("messages").appendChild(li);
-    } else {
-      alert("Error: " + data.error);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Network or server error");
+  // HANDLE ERROR
+  if (!res.ok) {
+    return alert("Error: " + (data.error ?? "Something went wrong"));
   }
+
+  // SUCCESS — do NOT show error
+  alert("Product added successfully!");
 }
 
+    async function searchProduct() {
+      const query = document.getElementById("search").value.trim();
+      if (!query) return alert("Enter search text");
 
-async function searchProduct() {
-  const query = document.getElementById("search").value.trim();
-  if (!query) return alert("Enter search text");
+      const res = await fetch("http://localhost:3000/search?q=" + encodeURIComponent(query));
+      const products = await res.json();
 
-  try {
-    const res = await fetch("http://localhost:3000/search?q=" + encodeURIComponent(query));
-    if (!res.ok) {
-      const err = await res.json();
-      return alert("Error: " + err.error);
+      const ul = document.getElementById("messages");
+      ul.innerHTML = "";
+
+      products.forEach(product => {
+        const li = document.createElement("li");
+        li.textContent = `${product.name} - ₹${product.price} - ${product.category} - ${product.brand}`;
+        ul.appendChild(li);
+      });
     }
-
-    const products = await res.json(); 
-    const ul = document.getElementById("messages");
-    ul.innerHTML = ""; 
-
-    products.forEach(product => {
-      const li = document.createElement("li");
-      li.textContent = `${product.name ?? "N/A"} - ₹${product.price ?? "N/A"} - ${product.category ?? "N/A"} - ${product.brand ?? "N/A"}`;
-      ul.appendChild(li);
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("Network or server error");
-  }
-}
 
     socket.on("receive-message", (data) => {
       const li = document.createElement("li");
-      li.textContent = data.from + ": " + data.message;
+      li.textContent = data.message;
       document.getElementById("messages").appendChild(li);
     });
   </script>
